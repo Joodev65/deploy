@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Web Deployer</title>
+  <style>
+    body { font-family: Arial; text-align:center; padding:50px; background:#111; color:#eee; }
+    input, button { margin:10px; padding:10px; }
+    button { cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h1>Deploy HTML ke Vercel</h1>
+  <form action="/deploy" method="POST" enctype="multipart/form-data">
+    <input type="text" name="namaWeb" placeholder="Nama Website" required><br>
+    <input type="file" name="file" accept=".html" required><br>
+    <button type="submit">Deploy!</button>
+  </form>
+</body>
+</html>

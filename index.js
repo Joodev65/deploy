@@ -2,14 +2,13 @@ import express from "express";
 import multer from "multer";
 import axios from "axios";
 import fs from "fs";
-import path from "path";
-import { execSync } from "child_process";
+import FormData from "form-data";
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
 
-// 🔑 Ganti dengan raw Pastebin lu
-const pastebinRawUrl = "https://pastebin.com/raw/XXXXXXX";
+// pastebin raw URL
+const pastebinRawUrl = "https://pastebin.com/raw/NXsRYLWu";
 
 app.use(express.static("views"));
 
@@ -23,17 +22,41 @@ app.post("/deploy", upload.single("file"), async (req, res) => {
   }
 
   try {
-    // Ambil token vercel dari pastebin raw
+    // Ambil token dari pastebin
     const tokenRes = await axios.get(pastebinRawUrl);
     const vercelToken = tokenRes.data.trim();
 
-    // Buat folder temp
-    const projectDir = `./deploy_${Date.now()}`;
-    fs.mkdirSync(projectDir);
+    // Buat form-data untuk API Vercel
+    const form = new FormData();
+    form.append("file", fs.createReadStream(file.path), "index.html");
+    form.append("file", Buffer.from(JSON.stringify({
+      version: 2,
+      builds: [{ src: "index.html", use: "@vercel/static" }],
+      routes: [{ src: "/(.*)", dest: "/index.html" }]
+    })), { filename: "vercel.json", contentType: "application/json" });
 
-    // Simpan file jadi index.html
-    const destPath = path.join(projectDir, "index.html");
-    fs.renameSync(file.path, destPath);
+    const deployRes = await axios.post(
+      "https://api.vercel.com/v13/deployments",
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${vercelToken}`
+        },
+        params: { name: namaWeb, project: namaWeb }
+      }
+    );
+
+    const url = deployRes.data.url;
+
+    res.send(`✅ Sukses deploy!<br>🔗 <a href="https://${url}" target="_blank">${url}</a>`);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.send("❌ Gagal deploy ke Vercel.");
+  }
+});
+
+export default app;
 
     // Buat vercel.json
     fs.writeFileSync(
